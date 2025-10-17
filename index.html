@@ -243,8 +243,8 @@
       attLargeCell.textContent = attLarge;
       cardSmall.textContent = cardSmallCount.toFixed(0);
       cardLarge.textContent = cardLargeCount.toFixed(0);
-      revSmall.textContent = `£${(attSmall*TICKET_PRICE).toFixed(2)}`;
-      revLarge.textContent = `£${(attLarge*TICKET_PRICE).toFixed(2)}`;
+      revSmall.textContent = `£${(cardSmallCount*TICKET_PRICE).toFixed(2)}`;
+      revLarge.textContent = `£${(cardLargeCount*TICKET_PRICE).toFixed(2)}`;
       feesSmall.textContent = `£${feeSmall.toFixed(2)}`;
       feesLarge.textContent = `£${feeLarge.toFixed(2)}`;
       totalSmall.textContent = `£${(feeSmall+subSplit).toFixed(2)}`;
@@ -271,5 +271,3 @@
   </script>
 </body>
 </html>
-
-
