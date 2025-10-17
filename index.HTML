@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Neartail Annual Cost Calculator (£)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 28px;
+      background: #f5f7fb;
+      color: #222;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(25,40,60,0.06);
+    }
+    h1 { margin: 0 0 12px 0; font-size: 22px; }
+    label { display:block; margin-top:12px; font-weight:600; }
+    input[type="number"], input[type="range"] {
+      width:100%; margin-top:8px; padding:8px; box-sizing:border-box;
+      border-radius:6px; border:1px solid #d6d9de;
+    }
+    .constants, .results, .chart-area {
+      margin-top:18px; padding:14px; border-radius:10px;
+      background:#fbfcff; border:1px solid #e6e9ef;
+    }
+    .row { display:flex; justify-content:space-between; align-items:center; margin:8px 0; }
+    .label { color:#444; }
+    .value { font-weight:700; color:#0b61a4; }
+    hr { border:none; border-top:1px solid #e6e9ef; margin:14px 0; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
+    th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #eef2f6; }
+    th { background:#f3f6fb; font-weight:700; color:#333; }
+    canvas { width:100% !important; max-width:100%; height:320px; }
+    .note { font-size:13px; color:#555; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Neartail Annual Cost Calculator (£)</h1>
+
+    <!-- Inputs -->
+    <label for="attendanceSmall">Regular event attendance (4 events)</label>
+    <input id="attendanceSmall" type="number" min="1" value="35" />
+
+    <label for="attendanceLarge">Large event attendance (1 event)</label>
+    <input id="attendanceLarge" type="number" min="1" value="130" />
+
+    <label for="cardPercent">Card payments (% of tickets): <span id="cardLabel">33</span>%</label>
+    <input id="cardPercent" type="range" min="0" max="100" step="1" value="33" />
+
+    <label for="memberCount">Number of organisation members</label>
+    <input id="memberCount" type="number" min="1" value="44" />
+
+    <!-- Constants -->
+    <div class="constants">
+      <div class="row"><div class="label">Total events per year</div><div class="value">5 (4 regular + 1 large)</div></div>
+      <div class="row"><div class="label">Ticket price</div><div class="value">£40.00</div></div>
+      <div class="row"><div class="label">Neartail Premium (annual)</div><div class="value">£336.00</div></div>
+      <div class="row"><div class="label">Transaction fee</div><div class="value">1.5% + £0.20 per card transaction</div></div>
+    </div>
+
+    <!-- Results -->
+    <div class="results" aria-live="polite">
+      <div style="font-weight:700; margin-bottom:8px;">Annual overview</div>
+      <div class="row"><div class="label">Total tickets per year</div><div class="value" id="totalTickets">270</div></div>
+      <div class="row"><div class="label">Card tickets</div><div class="value" id="cardTickets">89</div></div>
+      <div class="row"><div class="label">Transaction fees</div><div class="value" id="transactionFees">£71.20</div></div>
+      <div class="row"><div class="label">Total annual cost</div><div class="value" id="totalCost">£407.20</div></div>
+      <div class="row"><div class="label">Cost as % of ticket revenue</div><div class="value" id="costPercent">3.77%</div></div>
+      <div class="row"><div class="label">Average cost per event</div><div class="value" id="costPerEvent">£81.44</div></div>
+      <div class="row"><div class="label">Annual cost per member</div><div class="value" id="annualPerMember">£9.26</div></div>
+      <div class="row"><div class="label">Cost per event per member</div><div class="value" id="costPerMember">£1.85</div></div>
+
+      <hr/>
+
+      <div style="font-weight:700; margin-bottom:8px;">Per Event Breakdown</div>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Regular Event (4×)</th><th>Large Event (1×)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Attendance</td><td id="attSmallCell">35</td><td id="attLargeCell">130</td></tr>
+          <tr><td>Card sales (tickets)</td><td id="cardSmall">12</td><td id="cardLarge">43</td></tr>
+          <tr><td>Card revenue (£)</td><td id="revSmall">£480.00</td><td id="revLarge">£1,720.00</td></tr>
+          <tr><td>Transaction fees (£)</td><td id="feesSmall">£9.28</td><td id="feesLarge">£33.32</td></tr>
+          <tr><td>Total cost per event (subscription + fees)</td><td id="totalSmall">£81.44</td><td id="totalLarge">£81.44</td></tr>
+          <tr><td>Cost % of ticket revenue</td><td id="pctSmall">5.81%</td><td id="pctLarge">2.07%</td></tr>
+          <tr><td>Cost per member (per event)</td><td id="perMemberSmall">£1.85</td><td id="perMemberLarge">£1.85</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Comparison Chart -->
+    <div class="chart-area">
+      <h3>Example Comparison Scenarios</h3>
+      <canvas id="comparisonChart"></canvas>
+      <p class="note">Illustrates how plan choice and membership size affect per-member annual cost.</p>
+    </div>
+
+    <!-- Dynamic Chart -->
+    <div class="chart-area">
+      <h3>Dynamic Cost per Member vs Membership Size</h3>
+      <canvas id="dynamicChart"></canvas>
+      <p class="note">Shows the live relationship between total members and per-member annual cost.</p>
+    </div>
+  </div>
+
+  <script>
+    const attendanceSmallInput = document.getElementById('attendanceSmall');
+    const attendanceLargeInput = document.getElementById('attendanceLarge');
+    const cardPercentInput = document.getElementById('cardPercent');
+    const cardLabel = document.getElementById('cardLabel');
+    const memberCountInput = document.getElementById('memberCount');
+
+    const totalTicketsEl = document.getElementById('totalTickets');
+    const cardTicketsEl = document.getElementById('cardTickets');
+    const transactionFeesEl = document.getElementById('transactionFees');
+    const totalCostEl = document.getElementById('totalCost');
+    const costPercentEl = document.getElementById('costPercent');
+    const costPerEventEl = document.getElementById('costPerEvent');
+    const annualPerMemberEl = document.getElementById('annualPerMember');
+    const costPerMemberEl = document.getElementById('costPerMember');
+
+    const attSmallCell = document.getElementById('attSmallCell');
+    const attLargeCell = document.getElementById('attLargeCell');
+    const cardSmall = document.getElementById('cardSmall');
+    const cardLarge = document.getElementById('cardLarge');
+    const revSmall = document.getElementById('revSmall');
+    const revLarge = document.getElementById('revLarge');
+    const feesSmall = document.getElementById('feesSmall');
+    const feesLarge = document.getElementById('feesLarge');
+    const totalSmall = document.getElementById('totalSmall');
+    const totalLarge = document.getElementById('totalLarge');
+    const pctSmall = document.getElementById('pctSmall');
+    const pctLarge = document.getElementById('pctLarge');
+    const perMemberSmall = document.getElementById('perMemberSmall');
+    const perMemberLarge = document.getElementById('perMemberLarge');
+
+    const PREMIUM_SUB = 336;
+    const BASIC_SUB = 216;
+    const TICKET_PRICE = 40;
+    const FEE_RATE = 0.015;
+    const FEE_FIXED = 0.20;
+
+    const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+    const dynamicCtx = document.getElementById('dynamicChart').getContext('2d');
+
+    const comparisonChart = new Chart(comparisonCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Current (Premium, 44)', 'Basic Plan (44)', 'Premium + 60 members', 'Basic + 60 members'],
+        datasets: [{
+          label: 'Annual Cost per Member (£)',
+          data: [9.25, 6.52, 6.78, 4.78],
+          backgroundColor: ['#0b61a4','#1e90ff','#28a745','#6cc24a']
+        }]
+      },
+      options: {
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            callbacks:{
+              label: ctx => `£${ctx.parsed.y.toFixed(2)} / member`
+            }
+          }
+        },
+        scales:{
+          y:{
+            beginAtZero:true,
+            title:{display:true,text:'£ / member'}
+          }
+        }
+      }
+    });
+
+    const dynamicChart = new Chart(dynamicCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{
+        label: 'Cost per Member (£)',
+        data: [], borderColor:'#0b61a4', borderWidth:2, fill:false, tension:0.2, pointBackgroundColor:'#0b61a4'
+      }]},
+      options: {
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            mode:'nearest',
+            intersect:false,
+            callbacks:{
+              label: ctx => `£${ctx.parsed.y.toFixed(2)} / member`
+            }
+          }
+        },
+        scales:{
+          y:{beginAtZero:true,title:{display:true,text:'£ / member'}},
+          x:{title:{display:true,text:'Number of Members'}}
+        }
+      }
+    });
+
+    function recalc(){
+      const attSmall = Number(attendanceSmallInput.value);
+      const attLarge = Number(attendanceLargeInput.value);
+      const cardPct = Number(cardPercentInput.value);
+      const members = Number(memberCountInput.value);
+      cardLabel.textContent = cardPct;
+
+      const totalTickets = attSmall*4 + attLarge;
+      const totalCardTickets = totalTickets * (cardPct/100);
+      const feePerCard = (TICKET_PRICE * FEE_RATE) + FEE_FIXED;
+      const totalFees = totalCardTickets * feePerCard;
+      const totalCost = PREMIUM_SUB + totalFees;
+      const totalRevenue = totalTickets * TICKET_PRICE;
+      const costPercent = (totalCost / totalRevenue) * 100;
+      const costPerEvent = totalCost / 5;
+      const annualPerMember = totalCost / members;
+      const costPerMemberEvent = costPerEvent / members;
+
+      totalTicketsEl.textContent = totalTickets.toFixed(0);
+      cardTicketsEl.textContent = totalCardTickets.toFixed(0);
+      transactionFeesEl.textContent = `£${totalFees.toFixed(2)}`;
+      totalCostEl.textContent = `£${totalCost.toFixed(2)}`;
+      costPercentEl.textContent = `${costPercent.toFixed(2)}%`;
+      costPerEventEl.textContent = `£${costPerEvent.toFixed(2)}`;
+      annualPerMemberEl.textContent = `£${annualPerMember.toFixed(2)}`;
+      costPerMemberEl.textContent = `£${costPerMemberEvent.toFixed(2)}`;
+
+      const cardSmallCount = attSmall * (cardPct/100);
+      const cardLargeCount = attLarge * (cardPct/100);
+      const feeSmall = cardSmallCount * feePerCard;
+      const feeLarge = cardLargeCount * feePerCard;
+      const subSplit = PREMIUM_SUB/5;
+
+      attSmallCell.textContent = attSmall;
+      attLargeCell.textContent = attLarge;
+      cardSmall.textContent = cardSmallCount.toFixed(0);
+      cardLarge.textContent = cardLargeCount.toFixed(0);
+      revSmall.textContent = `£${(attSmall*TICKET_PRICE).toFixed(2)}`;
+      revLarge.textContent = `£${(attLarge*TICKET_PRICE).toFixed(2)}`;
+      feesSmall.textContent = `£${feeSmall.toFixed(2)}`;
+      feesLarge.textContent = `£${feeLarge.toFixed(2)}`;
+      totalSmall.textContent = `£${(feeSmall+subSplit).toFixed(2)}`;
+      totalLarge.textContent = `£${(feeLarge+subSplit).toFixed(2)}`;
+      pctSmall.textContent = `${(((feeSmall+subSplit)/(attSmall*TICKET_PRICE))*100).toFixed(2)}%`;
+      pctLarge.textContent = `${(((feeLarge+subSplit)/(attLarge*TICKET_PRICE))*100).toFixed(2)}%`;
+      perMemberSmall.textContent = `£${((feeSmall+subSplit)/members).toFixed(2)}`;
+      perMemberLarge.textContent = `£${((feeLarge+subSplit)/members).toFixed(2)}`;
+
+      // Dynamic chart
+      const memberData = [], costData = [];
+      for (let m=20;m<=120;m+=5){
+        memberData.push(m);
+        costData.push((totalCost/m).toFixed(2));
+      }
+      dynamicChart.data.labels = memberData;
+      dynamicChart.data.datasets[0].data = costData;
+      dynamicChart.update();
+    }
+
+    [attendanceSmallInput, attendanceLargeInput, cardPercentInput, memberCountInput]
+      .forEach(el => el.addEventListener('input', recalc));
+
+    recalc();
+  </script>
+</body>
+</html>
