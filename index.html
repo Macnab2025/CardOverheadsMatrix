@@ -52,8 +52,8 @@
     <label for="attendanceLarge">Large event attendance (1 event)</label>
     <input id="attendanceLarge" type="number" min="1" value="130" />
 
-    <label for="cardPercent">Card payments (% of tickets): <span id="cardLabel">33</span>%</label>
-    <input id="cardPercent" type="range" min="0" max="100" step="1" value="33" />
+    <label for="cardPercent">Card payments (% of tickets): <span id="cardLabel">25</span>%</label>
+    <input id="cardPercent" type="range" min="0" max="100" step="1" value="25" />
 
     <label for="memberCount">Number of organisation members</label>
     <input id="memberCount" type="number" min="1" value="44" />
@@ -70,13 +70,13 @@
     <div class="results" aria-live="polite">
       <div style="font-weight:700; margin-bottom:8px;">Annual overview</div>
       <div class="row"><div class="label">Total tickets per year</div><div class="value" id="totalTickets">270</div></div>
-      <div class="row"><div class="label">Card tickets</div><div class="value" id="cardTickets">89</div></div>
-      <div class="row"><div class="label">Transaction fees</div><div class="value" id="transactionFees">£71.20</div></div>
-      <div class="row"><div class="label">Total annual cost</div><div class="value" id="totalCost">£407.20</div></div>
-      <div class="row"><div class="label">Cost as % of ticket revenue</div><div class="value" id="costPercent">3.77%</div></div>
-      <div class="row"><div class="label">Average cost per event</div><div class="value" id="costPerEvent">£81.44</div></div>
-      <div class="row"><div class="label">Annual cost per member</div><div class="value" id="annualPerMember">£9.26</div></div>
-      <div class="row"><div class="label">Cost per event per member</div><div class="value" id="costPerMember">£1.85</div></div>
+      <div class="row"><div class="label">Card tickets</div><div class="value" id="cardTickets">68</div></div>
+      <div class="row"><div class="label">Transaction fees</div><div class="value" id="transactionFees">£54.40</div></div>
+      <div class="row"><div class="label">Total annual cost</div><div class="value" id="totalCost">£390.40</div></div>
+      <div class="row"><div class="label">Cost as % of ticket revenue</div><div class="value" id="costPercent">3.40%</div></div>
+      <div class="row"><div class="label">Average cost per event</div><div class="value" id="costPerEvent">£78.08</div></div>
+      <div class="row"><div class="label">Annual cost per member</div><div class="value" id="annualPerMember">£8.87</div></div>
+      <div class="row"><div class="label">Cost per event per member</div><div class="value" id="costPerMember">£1.77</div></div>
 
       <hr/>
 
@@ -87,12 +87,12 @@
         </thead>
         <tbody>
           <tr><td>Attendance</td><td id="attSmallCell">35</td><td id="attLargeCell">130</td></tr>
-          <tr><td>Card sales (tickets)</td><td id="cardSmall">12</td><td id="cardLarge">43</td></tr>
-          <tr><td>Card revenue (£)</td><td id="revSmall">£480.00</td><td id="revLarge">£1,720.00</td></tr>
-          <tr><td>Transaction fees (£)</td><td id="feesSmall">£9.28</td><td id="feesLarge">£33.32</td></tr>
-          <tr><td>Total cost per event (subscription + fees)</td><td id="totalSmall">£81.44</td><td id="totalLarge">£81.44</td></tr>
-          <tr><td>Cost % of ticket revenue</td><td id="pctSmall">5.81%</td><td id="pctLarge">2.07%</td></tr>
-          <tr><td>Cost per member (per event)</td><td id="perMemberSmall">£1.85</td><td id="perMemberLarge">£1.85</td></tr>
+          <tr><td>Card sales (tickets)</td><td id="cardSmall">9</td><td id="cardLarge">33</td></tr>
+          <tr><td>Card revenue (£)</td><td id="revSmall">£360.00</td><td id="revLarge">£1,320.00</td></tr>
+          <tr><td>Transaction fees (£)</td><td id="feesSmall">£7.44</td><td id="feesLarge">£26.32</td></tr>
+          <tr><td>Total cost per event (subscription + fees)</td><td id="totalSmall">£78.08</td><td id="totalLarge">£78.08</td></tr>
+          <tr><td>Cost % of ticket revenue</td><td id="pctSmall">5.42%</td><td id="pctLarge">1.98%</td></tr>
+          <tr><td>Cost per member (per event)</td><td id="perMemberSmall">£1.77</td><td id="perMemberLarge">£1.77</td></tr>
         </tbody>
       </table>
     </div>
@@ -254,7 +254,6 @@
       perMemberSmall.textContent = `£${((feeSmall+subSplit)/members).toFixed(2)}`;
       perMemberLarge.textContent = `£${((feeLarge+subSplit)/members).toFixed(2)}`;
 
-      // Dynamic chart
       const memberData = [], costData = [];
       for (let m=20;m<=120;m+=5){
         memberData.push(m);
@@ -272,3 +271,5 @@
   </script>
 </body>
 </html>
+
+
