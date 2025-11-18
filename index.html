@@ -52,10 +52,13 @@
     <label for="attendanceLarge">Large event attendance (1 event)</label>
     <input id="attendanceLarge" type="number" min="1" value="130" />
 
+    <label for="ticketPrice">Ticket price (£)</label>
+    <input id="ticketPrice" type="number" min="1" step="0.01" value="40" />
+
     <label for="cardPercent">Card payments (% of tickets): <span id="cardLabel">25</span>%</label>
     <input id="cardPercent" type="range" min="0" max="100" step="1" value="25" />
 
-    <label for="monthlyPremiumCost">Monthly premium cost (£)</label>
+    <label for="monthlyPremiumCost">Neartail Monthly Package Cost (£)</label>
     <input id="monthlyPremiumCost" type="number" min="1" step="0.01" value="28.00" />
 
     <label for="memberCount">Number of organisation members</label>
@@ -64,9 +67,9 @@
     <!-- Constants -->
     <div class="constants">
       <div class="row"><div class="label">Total events per year</div><div class="value">5 (4 regular + 1 large)</div></div>
-      <div class="row"><div class="label">Ticket price</div><div class="value">£40.00</div></div>
-      <div class="row"><div class="label">Neartail Premium (monthly)</div><div class="value" id="monthlyDisplay">£28.00</div></div>
-      <div class="row"><div class="label">Neartail Premium (annual)</div><div class="value" id="annualDisplay">£336.00</div></div>
+      <div class="row"><div class="label">Ticket price</div><div class="value" id="ticketPriceDisplay">£40.00</div></div>
+      <div class="row"><div class="label">Neartail Monthly Package</div><div class="value" id="monthlyDisplay">£28.00</div></div>
+      <div class="row"><div class="label">Neartail Annual Package</div><div class="value" id="annualDisplay">£336.00</div></div>
       <div class="row"><div class="label">Transaction fee</div><div class="value">1.5% + £0.20 per card transaction</div></div>
     </div>
 
@@ -119,11 +122,13 @@
   <script>
     const attendanceSmallInput = document.getElementById('attendanceSmall');
     const attendanceLargeInput = document.getElementById('attendanceLarge');
+    const ticketPriceInput = document.getElementById('ticketPrice');
     const cardPercentInput = document.getElementById('cardPercent');
     const cardLabel = document.getElementById('cardLabel');
     const monthlyPremiumCostInput = document.getElementById('monthlyPremiumCost');
     const memberCountInput = document.getElementById('memberCount');
 
+    const ticketPriceDisplay = document.getElementById('ticketPriceDisplay');
     const monthlyDisplayEl = document.getElementById('monthlyDisplay');
     const annualDisplayEl = document.getElementById('annualDisplay');
 
@@ -151,8 +156,6 @@
     const perMemberSmall = document.getElementById('perMemberSmall');
     const perMemberLarge = document.getElementById('perMemberLarge');
 
-    const BASIC_SUB = 216;
-    const TICKET_PRICE = 40;
     const FEE_RATE = 0.015;
     const FEE_FIXED = 0.20;
 
@@ -173,18 +176,9 @@
         responsive:true,
         plugins:{
           legend:{display:false},
-          tooltip:{
-            callbacks:{
-              label: ctx => `£${ctx.parsed.y.toFixed(2)} / member`
-            }
-          }
+          tooltip:{ callbacks:{ label: ctx => `£${ctx.parsed.y.toFixed(2)} / member` }}
         },
-        scales:{
-          y:{
-            beginAtZero:true,
-            title:{display:true,text:'£ / member'}
-          }
-        }
+        scales:{ y:{ beginAtZero:true, title:{display:true,text:'£ / member'} }}
       }
     });
 
@@ -196,43 +190,36 @@
       }]},
       options: {
         responsive:true,
-        plugins:{
-          legend:{display:false},
-          tooltip:{
-            mode:'nearest',
-            intersect:false,
-            callbacks:{
-              label: ctx => `£${ctx.parsed.y.toFixed(2)} / member`
-            }
-          }
-        },
-        scales:{
-          y:{beginAtZero:true,title:{display:true,text:'£ / member'}},
-          x:{title:{display:true,text:'Number of Members'}}
-        }
+        plugins:{ legend:{display:false} },
+        scales:{ y:{beginAtZero:true,title:{display:true,text:'£ / member'}}, x:{title:{display:true,text:'Number of Members'}} }
       }
     });
 
     function recalc(){
       const attSmall = Number(attendanceSmallInput.value);
       const attLarge = Number(attendanceLargeInput.value);
+      const ticketPrice = Number(ticketPriceInput.value);
       const cardPct = Number(cardPercentInput.value);
       const monthlyPremium = Number(monthlyPremiumCostInput.value);
       const members = Number(memberCountInput.value);
-      
+
       const annualPremium = monthlyPremium * 12;
-      
+
       cardLabel.textContent = cardPct;
+      ticketPriceDisplay.textContent = `£${ticketPrice.toFixed(2)}`;
       monthlyDisplayEl.textContent = `£${monthlyPremium.toFixed(2)}`;
       annualDisplayEl.textContent = `£${annualPremium.toFixed(2)}`;
 
       const totalTickets = attSmall*4 + attLarge;
       const totalCardTickets = totalTickets * (cardPct/100);
-      const feePerCard = (TICKET_PRICE * FEE_RATE) + FEE_FIXED;
+
+      const feePerCard = (ticketPrice * FEE_RATE) + FEE_FIXED;
       const totalFees = totalCardTickets * feePerCard;
       const totalCost = annualPremium + totalFees;
-      const totalRevenue = totalTickets * TICKET_PRICE;
-      const costPercent = (totalCost / totalRevenue) * 100;
+
+      const totalRevenue = totalTickets * ticketPrice;
+      const costPercent = totalRevenue === 0 ? 0 : (totalCost / totalRevenue) * 100;
+
       const costPerEvent = totalCost / 5;
       const annualPerMember = totalCost / members;
       const costPerMemberEvent = costPerEvent / members;
@@ -256,14 +243,18 @@
       attLargeCell.textContent = attLarge;
       cardSmall.textContent = cardSmallCount.toFixed(0);
       cardLarge.textContent = cardLargeCount.toFixed(0);
-      revSmall.textContent = `£${(cardSmallCount*TICKET_PRICE).toFixed(2)}`;
-      revLarge.textContent = `£${(cardLargeCount*TICKET_PRICE).toFixed(2)}`;
+      revSmall.textContent = `£${(cardSmallCount*ticketPrice).toFixed(2)}`;
+      revLarge.textContent = `£${(cardLargeCount*ticketPrice).toFixed(2)}`;
+
       feesSmall.textContent = `£${feeSmall.toFixed(2)}`;
       feesLarge.textContent = `£${feeLarge.toFixed(2)}`;
+
       totalSmall.textContent = `£${(feeSmall+subSplit).toFixed(2)}`;
       totalLarge.textContent = `£${(feeLarge+subSplit).toFixed(2)}`;
-      pctSmall.textContent = `${(((feeSmall+subSplit)/(attSmall*TICKET_PRICE))*100).toFixed(2)}%`;
-      pctLarge.textContent = `${(((feeLarge+subSplit)/(attLarge*TICKET_PRICE))*100).toFixed(2)}%`;
+
+      pctSmall.textContent = `${attSmall === 0 ? 0 : (((feeSmall+subSplit)/(attSmall*ticketPrice))*100).toFixed(2)}%`;
+      pctLarge.textContent = `${attLarge === 0 ? 0 : (((feeLarge+subSplit)/(attLarge*ticketPrice))*100).toFixed(2)}%`;
+
       perMemberSmall.textContent = `£${((feeSmall+subSplit)/members).toFixed(2)}`;
       perMemberLarge.textContent = `£${((feeLarge+subSplit)/members).toFixed(2)}`;
 
@@ -277,11 +268,10 @@
       dynamicChart.update();
     }
 
-    [attendanceSmallInput, attendanceLargeInput, cardPercentInput, monthlyPremiumCostInput, memberCountInput]
+    [attendanceSmallInput, attendanceLargeInput, ticketPriceInput, cardPercentInput, monthlyPremiumCostInput, memberCountInput]
       .forEach(el => el.addEventListener('input', recalc));
 
     recalc();
   </script>
 </body>
 </html>
-
