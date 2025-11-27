@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Neartail Annual Cost Calculator (£)</title>
+  <title>Neartail Annual Cost Calculator (£) - Improved</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -26,6 +26,16 @@
       width:100%; margin-top:8px; padding:8px; box-sizing:border-box;
       border-radius:6px; border:1px solid #d6d9de;
     }
+    input[type="number"]:invalid {
+      border-color: #e74c3c;
+      background-color: #fdf2f2;
+    }
+    .error-message {
+      color: #e74c3c;
+      font-size: 12px;
+      margin-top: 4px;
+      display: none;
+    }
     .constants, .results, .chart-area {
       margin-top:18px; padding:14px; border-radius:10px;
       background:#fbfcff; border:1px solid #e6e9ef;
@@ -39,30 +49,48 @@
     th { background:#f3f6fb; font-weight:700; color:#333; }
     canvas { width:100% !important; max-width:100%; height:320px; }
     .note { font-size:13px; color:#555; margin-top:8px; }
+    .validation-warning {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 12px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Neartail Annual Cost Calculator (£)</h1>
+    <h1>Neartail Annual Cost Calculator (£) - Improved Version</h1>
+
+    <div id="validationWarning" class="validation-warning">
+      <strong>⚠️ Input Validation Issues:</strong>
+      <ul id="validationList"></ul>
+    </div>
 
     <!-- Inputs -->
     <label for="attendanceSmall">Regular event attendance (4 events)</label>
-    <input id="attendanceSmall" type="number" min="1" value="35" />
+    <input id="attendanceSmall" type="number" min="0" step="1" value="35" />
+    <div class="error-message" id="errorSmall">Attendance must be a positive whole number</div>
 
     <label for="attendanceLarge">Large event attendance (1 event)</label>
-    <input id="attendanceLarge" type="number" min="1" value="130" />
+    <input id="attendanceLarge" type="number" min="0" step="1" value="130" />
+    <div class="error-message" id="errorLarge">Attendance must be a positive whole number</div>
 
     <label for="ticketPrice">Ticket price (£)</label>
-    <input id="ticketPrice" type="number" min="1" step="0.01" value="40" />
+    <input id="ticketPrice" type="number" min="0" step="0.01" value="40" />
+    <div class="error-message" id="errorPrice">Ticket price must be positive</div>
 
     <label for="cardPercent">Card payments (% of tickets): <span id="cardLabel">25</span>%</label>
     <input id="cardPercent" type="range" min="0" max="100" step="1" value="25" />
 
     <label for="monthlyPremiumCost">Neartail Monthly Package Cost (£)</label>
-    <input id="monthlyPremiumCost" type="number" min="1" step="0.01" value="28.00" />
+    <input id="monthlyPremiumCost" type="number" min="0" step="0.01" value="28.00" />
+    <div class="error-message" id="errorMonthly">Monthly cost must be positive</div>
 
     <label for="memberCount">Number of organisation members</label>
-    <input id="memberCount" type="number" min="1" value="44" />
+    <input id="memberCount" type="number" min="1" step="1" value="44" />
+    <div class="error-message" id="errorMembers">Member count must be at least 1</div>
 
     <!-- Constants -->
     <div class="constants">
@@ -120,6 +148,7 @@
   </div>
 
   <script>
+    // Input elements
     const attendanceSmallInput = document.getElementById('attendanceSmall');
     const attendanceLargeInput = document.getElementById('attendanceLarge');
     const ticketPriceInput = document.getElementById('ticketPrice');
@@ -128,10 +157,12 @@
     const monthlyPremiumCostInput = document.getElementById('monthlyPremiumCost');
     const memberCountInput = document.getElementById('memberCount');
 
+    // Display elements
     const ticketPriceDisplay = document.getElementById('ticketPriceDisplay');
     const monthlyDisplayEl = document.getElementById('monthlyDisplay');
     const annualDisplayEl = document.getElementById('annualDisplay');
 
+    // Result elements
     const totalTicketsEl = document.getElementById('totalTickets');
     const cardTicketsEl = document.getElementById('cardTickets');
     const transactionFeesEl = document.getElementById('transactionFees');
@@ -141,6 +172,7 @@
     const annualPerMemberEl = document.getElementById('annualPerMember');
     const costPerMemberEl = document.getElementById('costPerMember');
 
+    // Table elements
     const attSmallCell = document.getElementById('attSmallCell');
     const attLargeCell = document.getElementById('attLargeCell');
     const cardSmall = document.getElementById('cardSmall');
@@ -156,9 +188,106 @@
     const perMemberSmall = document.getElementById('perMemberSmall');
     const perMemberLarge = document.getElementById('perMemberLarge');
 
+    // Validation elements
+    const validationWarning = document.getElementById('validationWarning');
+    const validationList = document.getElementById('validationList');
+
+    // Constants
     const FEE_RATE = 0.015;
     const FEE_FIXED = 0.20;
+    const TOTAL_EVENTS = 5;
 
+    // Utility functions
+    function isValidPositiveNumber(value) {
+      return !isNaN(value) && isFinite(value) && value >= 0;
+    }
+
+    function isValidPositiveInteger(value) {
+      return Number.isInteger(value) && value >= 0;
+    }
+
+    function safeRound(number, decimals = 2) {
+      return Math.round((number + Number.EPSILON) * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    }
+
+    function safeDivide(numerator, denominator, fallback = 0) {
+      return denominator === 0 ? fallback : numerator / denominator;
+    }
+
+    function formatCurrency(amount) {
+      return `£${safeRound(amount, 2).toFixed(2)}`;
+    }
+
+    function formatPercentage(value) {
+      return `${safeRound(value, 2).toFixed(2)}%`;
+    }
+
+    // Validation function
+    function validateInputs() {
+      const validationErrors = [];
+      
+      const attSmall = Number(attendanceSmallInput.value);
+      const attLarge = Number(attendanceLargeInput.value);
+      const ticketPrice = Number(ticketPriceInput.value);
+      const monthlyPremium = Number(monthlyPremiumCostInput.value);
+      const members = Number(memberCountInput.value);
+
+      // Validate attendance
+      if (!isValidPositiveInteger(attSmall)) {
+        validationErrors.push('Regular event attendance must be a whole number ≥ 0');
+        document.getElementById('errorSmall').style.display = 'block';
+      } else {
+        document.getElementById('errorSmall').style.display = 'none';
+      }
+
+      if (!isValidPositiveInteger(attLarge)) {
+        validationErrors.push('Large event attendance must be a whole number ≥ 0');
+        document.getElementById('errorLarge').style.display = 'block';
+      } else {
+        document.getElementById('errorLarge').style.display = 'none';
+      }
+
+      // Validate prices
+      if (!isValidPositiveNumber(ticketPrice)) {
+        validationErrors.push('Ticket price must be ≥ £0');
+        document.getElementById('errorPrice').style.display = 'block';
+      } else {
+        document.getElementById('errorPrice').style.display = 'none';
+      }
+
+      if (!isValidPositiveNumber(monthlyPremium)) {
+        validationErrors.push('Monthly premium must be ≥ £0');
+        document.getElementById('errorMonthly').style.display = 'block';
+      } else {
+        document.getElementById('errorMonthly').style.display = 'none';
+      }
+
+      // Validate members
+      if (!Number.isInteger(members) || members < 1) {
+        validationErrors.push('Member count must be at least 1');
+        document.getElementById('errorMembers').style.display = 'block';
+      } else {
+        document.getElementById('errorMembers').style.display = 'none';
+      }
+
+      // Validate realistic limits
+      if (attSmall > 10000) validationErrors.push('Regular event attendance seems unusually high (>10,000)');
+      if (attLarge > 50000) validationErrors.push('Large event attendance seems unusually high (>50,000)');
+      if (ticketPrice > 1000) validationErrors.push('Ticket price seems unusually high (>£1,000)');
+      if (members > 100000) validationErrors.push('Member count seems unusually high (>100,000)');
+
+      // Update validation display
+      if (validationErrors.length > 0) {
+        validationList.innerHTML = validationErrors.map(err => `<li>${err}</li>`).join('');
+        validationWarning.style.display = 'block';
+        return false;
+      } else {
+        validationWarning.style.display = 'none';
+        return true;
+      }
+    }
+
+    // Chart initialization
     const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
     const dynamicCtx = document.getElementById('dynamicChart').getContext('2d');
 
@@ -173,29 +302,55 @@
         }]
       },
       options: {
-        responsive:true,
-        plugins:{
-          legend:{display:false},
-          tooltip:{ callbacks:{ label: ctx => `£${ctx.parsed.y.toFixed(2)} / member` }}
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { 
+            callbacks: { 
+              label: ctx => `£${ctx.parsed.y.toFixed(2)} / member` 
+            }
+          }
         },
-        scales:{ y:{ beginAtZero:true, title:{display:true,text:'£ / member'} }}
+        scales: { 
+          y: { 
+            beginAtZero: true, 
+            title: { display: true, text: '£ / member' } 
+          } 
+        }
       }
     });
 
     const dynamicChart = new Chart(dynamicCtx, {
       type: 'line',
-      data: { labels: [], datasets: [{
-        label: 'Cost per Member (£)',
-        data: [], borderColor:'#0b61a4', borderWidth:2, fill:false, tension:0.2, pointBackgroundColor:'#0b61a4'
-      }]},
+      data: { 
+        labels: [], 
+        datasets: [{
+          label: 'Cost per Member (£)',
+          data: [], 
+          borderColor: '#0b61a4', 
+          borderWidth: 2, 
+          fill: false, 
+          tension: 0.2, 
+          pointBackgroundColor: '#0b61a4'
+        }]
+      },
       options: {
-        responsive:true,
-        plugins:{ legend:{display:false} },
-        scales:{ y:{beginAtZero:true,title:{display:true,text:'£ / member'}}, x:{title:{display:true,text:'Number of Members'}} }
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { 
+          y: { beginAtZero: true, title: { display: true, text: '£ / member' } }, 
+          x: { title: { display: true, text: 'Number of Members' } } 
+        }
       }
     });
 
-    function recalc(){
+    // Main calculation function
+    function recalc() {
+      // Validate inputs first
+      if (!validateInputs()) {
+        return; // Don't update if validation fails
+      }
+
       const attSmall = Number(attendanceSmallInput.value);
       const attLarge = Number(attendanceLargeInput.value);
       const ticketPrice = Number(ticketPriceInput.value);
@@ -205,72 +360,80 @@
 
       const annualPremium = monthlyPremium * 12;
 
+      // Update display values
       cardLabel.textContent = cardPct;
-      ticketPriceDisplay.textContent = `£${ticketPrice.toFixed(2)}`;
-      monthlyDisplayEl.textContent = `£${monthlyPremium.toFixed(2)}`;
-      annualDisplayEl.textContent = `£${annualPremium.toFixed(2)}`;
+      ticketPriceDisplay.textContent = formatCurrency(ticketPrice);
+      monthlyDisplayEl.textContent = formatCurrency(monthlyPremium);
+      annualDisplayEl.textContent = formatCurrency(annualPremium);
 
-      const totalTickets = attSmall*4 + attLarge;
-      const totalCardTickets = totalTickets * (cardPct/100);
+      // Calculate core metrics
+      const totalTickets = attSmall * 4 + attLarge;
+      const totalCardTickets = safeRound(totalTickets * (cardPct / 100), 0);
 
-      const feePerCard = (ticketPrice * FEE_RATE) + FEE_FIXED;
-      const totalFees = totalCardTickets * feePerCard;
-      const totalCost = annualPremium + totalFees;
+      const feePerCard = safeRound((ticketPrice * FEE_RATE) + FEE_FIXED, 2);
+      const totalFees = safeRound(totalCardTickets * feePerCard, 2);
+      const totalCost = safeRound(annualPremium + totalFees, 2);
 
       const totalRevenue = totalTickets * ticketPrice;
-      const costPercent = totalRevenue === 0 ? 0 : (totalCost / totalRevenue) * 100;
+      const costPercent = safeDivide(totalCost * 100, totalRevenue, 0);
+      const costPerEvent = safeDivide(totalCost, TOTAL_EVENTS, 0);
+      const annualPerMember = safeDivide(totalCost, members, 0);
+      const costPerMemberEvent = safeDivide(costPerEvent, members, 0);
 
-      const costPerEvent = totalCost / 5;
-      const annualPerMember = totalCost / members;
-      const costPerMemberEvent = costPerEvent / members;
+      // Update main results
+      totalTicketsEl.textContent = totalTickets.toString();
+      cardTicketsEl.textContent = totalCardTickets.toString();
+      transactionFeesEl.textContent = formatCurrency(totalFees);
+      totalCostEl.textContent = formatCurrency(totalCost);
+      costPercentEl.textContent = formatPercentage(costPercent);
+      costPerEventEl.textContent = formatCurrency(costPerEvent);
+      annualPerMemberEl.textContent = formatCurrency(annualPerMember);
+      costPerMemberEl.textContent = formatCurrency(costPerMemberEvent);
 
-      totalTicketsEl.textContent = totalTickets.toFixed(0);
-      cardTicketsEl.textContent = totalCardTickets.toFixed(0);
-      transactionFeesEl.textContent = `£${totalFees.toFixed(2)}`;
-      totalCostEl.textContent = `£${totalCost.toFixed(2)}`;
-      costPercentEl.textContent = `${costPercent.toFixed(2)}%`;
-      costPerEventEl.textContent = `£${costPerEvent.toFixed(2)}`;
-      annualPerMemberEl.textContent = `£${annualPerMember.toFixed(2)}`;
-      costPerMemberEl.textContent = `£${costPerMemberEvent.toFixed(2)}`;
+      // Calculate per-event breakdowns
+      const cardSmallCount = safeRound(attSmall * (cardPct / 100), 0);
+      const cardLargeCount = safeRound(attLarge * (cardPct / 100), 0);
+      const feeSmall = safeRound(cardSmallCount * feePerCard, 2);
+      const feeLarge = safeRound(cardLargeCount * feePerCard, 2);
+      const subSplit = safeDivide(annualPremium, TOTAL_EVENTS, 0);
 
-      const cardSmallCount = attSmall * (cardPct/100);
-      const cardLargeCount = attLarge * (cardPct/100);
-      const feeSmall = cardSmallCount * feePerCard;
-      const feeLarge = cardLargeCount * feePerCard;
-      const subSplit = annualPremium/5;
+      // Update table
+      attSmallCell.textContent = attSmall.toString();
+      attLargeCell.textContent = attLarge.toString();
+      cardSmall.textContent = cardSmallCount.toString();
+      cardLarge.textContent = cardLargeCount.toString();
+      revSmall.textContent = formatCurrency(cardSmallCount * ticketPrice);
+      revLarge.textContent = formatCurrency(cardLargeCount * ticketPrice);
+      feesSmall.textContent = formatCurrency(feeSmall);
+      feesLarge.textContent = formatCurrency(feeLarge);
+      totalSmall.textContent = formatCurrency(feeSmall + subSplit);
+      totalLarge.textContent = formatCurrency(feeLarge + subSplit);
 
-      attSmallCell.textContent = attSmall;
-      attLargeCell.textContent = attLarge;
-      cardSmall.textContent = cardSmallCount.toFixed(0);
-      cardLarge.textContent = cardLargeCount.toFixed(0);
-      revSmall.textContent = `£${(cardSmallCount*ticketPrice).toFixed(2)}`;
-      revLarge.textContent = `£${(cardLargeCount*ticketPrice).toFixed(2)}`;
+      const smallRevenue = attSmall * ticketPrice;
+      const largeRevenue = attLarge * ticketPrice;
+      
+      pctSmall.textContent = formatPercentage(safeDivide((feeSmall + subSplit) * 100, smallRevenue, 0));
+      pctLarge.textContent = formatPercentage(safeDivide((feeLarge + subSplit) * 100, largeRevenue, 0));
+      
+      perMemberSmall.textContent = formatCurrency(safeDivide(feeSmall + subSplit, members, 0));
+      perMemberLarge.textContent = formatCurrency(safeDivide(feeLarge + subSplit, members, 0));
 
-      feesSmall.textContent = `£${feeSmall.toFixed(2)}`;
-      feesLarge.textContent = `£${feeLarge.toFixed(2)}`;
-
-      totalSmall.textContent = `£${(feeSmall+subSplit).toFixed(2)}`;
-      totalLarge.textContent = `£${(feeLarge+subSplit).toFixed(2)}`;
-
-      pctSmall.textContent = `${attSmall === 0 ? 0 : (((feeSmall+subSplit)/(attSmall*ticketPrice))*100).toFixed(2)}%`;
-      pctLarge.textContent = `${attLarge === 0 ? 0 : (((feeLarge+subSplit)/(attLarge*ticketPrice))*100).toFixed(2)}%`;
-
-      perMemberSmall.textContent = `£${((feeSmall+subSplit)/members).toFixed(2)}`;
-      perMemberLarge.textContent = `£${((feeLarge+subSplit)/members).toFixed(2)}`;
-
+      // Update dynamic chart
       const memberData = [], costData = [];
-      for (let m=20;m<=120;m+=5){
+      for (let m = 20; m <= 120; m += 5) {
         memberData.push(m);
-        costData.push((totalCost/m).toFixed(2));
+        costData.push(safeRound(safeDivide(totalCost, m, 0), 2));
       }
       dynamicChart.data.labels = memberData;
       dynamicChart.data.datasets[0].data = costData;
       dynamicChart.update();
     }
 
+    // Event listeners
     [attendanceSmallInput, attendanceLargeInput, ticketPriceInput, cardPercentInput, monthlyPremiumCostInput, memberCountInput]
       .forEach(el => el.addEventListener('input', recalc));
 
+    // Initial calculation
     recalc();
   </script>
 </body>
