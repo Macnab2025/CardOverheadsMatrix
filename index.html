@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Neartail Annual Cost Calculator (£) - Improved</title>
+  <title>Neartail Annual Cost Calculator (£) - Separate Event Pricing</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
@@ -61,7 +61,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Neartail Annual Cost Calculator (£) - Improved Version</h1>
+    <h1>Neartail Annual Cost Calculator (£) - Separate Event Pricing</h1>
 
     <div id="validationWarning" class="validation-warning">
       <strong>⚠️ Input Validation Issues:</strong>
@@ -77,9 +77,13 @@
     <input id="attendanceLarge" type="number" min="0" step="1" value="130" />
     <div class="error-message" id="errorLarge">Attendance must be a positive whole number</div>
 
-    <label for="ticketPrice">Ticket price (£)</label>
-    <input id="ticketPrice" type="number" min="0" step="0.01" value="40" />
-    <div class="error-message" id="errorPrice">Ticket price must be positive</div>
+    <label for="ticketPriceRegular">Regular event ticket price (£)</label>
+    <input id="ticketPriceRegular" type="number" min="0" step="0.01" value="35" />
+    <div class="error-message" id="errorPriceRegular">Regular ticket price must be positive</div>
+
+    <label for="ticketPriceLarge">Large event ticket price (£)</label>
+    <input id="ticketPriceLarge" type="number" min="0" step="0.01" value="40" />
+    <div class="error-message" id="errorPriceLarge">Large ticket price must be positive</div>
 
     <label for="cardPercent">Card payments (% of tickets): <span id="cardLabel">25</span>%</label>
     <input id="cardPercent" type="range" min="0" max="100" step="1" value="25" />
@@ -95,7 +99,8 @@
     <!-- Constants -->
     <div class="constants">
       <div class="row"><div class="label">Total events per year</div><div class="value">5 (4 regular + 1 large)</div></div>
-      <div class="row"><div class="label">Ticket price</div><div class="value" id="ticketPriceDisplay">£40.00</div></div>
+      <div class="row"><div class="label">Regular event ticket price</div><div class="value" id="ticketPriceRegularDisplay">£35.00</div></div>
+      <div class="row"><div class="label">Large event ticket price</div><div class="value" id="ticketPriceLargeDisplay">£40.00</div></div>
       <div class="row"><div class="label">Neartail Monthly Package</div><div class="value" id="monthlyDisplay">£28.00</div></div>
       <div class="row"><div class="label">Neartail Annual Package</div><div class="value" id="annualDisplay">£336.00</div></div>
       <div class="row"><div class="label">Transaction fee</div><div class="value">1.5% + £0.20 per card transaction</div></div>
@@ -151,14 +156,16 @@
     // Input elements
     const attendanceSmallInput = document.getElementById('attendanceSmall');
     const attendanceLargeInput = document.getElementById('attendanceLarge');
-    const ticketPriceInput = document.getElementById('ticketPrice');
+    const ticketPriceRegularInput = document.getElementById('ticketPriceRegular');
+    const ticketPriceLargeInput = document.getElementById('ticketPriceLarge');
     const cardPercentInput = document.getElementById('cardPercent');
     const cardLabel = document.getElementById('cardLabel');
     const monthlyPremiumCostInput = document.getElementById('monthlyPremiumCost');
     const memberCountInput = document.getElementById('memberCount');
 
     // Display elements
-    const ticketPriceDisplay = document.getElementById('ticketPriceDisplay');
+    const ticketPriceRegularDisplay = document.getElementById('ticketPriceRegularDisplay');
+    const ticketPriceLargeDisplay = document.getElementById('ticketPriceLargeDisplay');
     const monthlyDisplayEl = document.getElementById('monthlyDisplay');
     const annualDisplayEl = document.getElementById('annualDisplay');
 
@@ -228,7 +235,8 @@
       
       const attSmall = Number(attendanceSmallInput.value);
       const attLarge = Number(attendanceLargeInput.value);
-      const ticketPrice = Number(ticketPriceInput.value);
+      const ticketPriceRegular = Number(ticketPriceRegularInput.value);
+      const ticketPriceLarge = Number(ticketPriceLargeInput.value);
       const monthlyPremium = Number(monthlyPremiumCostInput.value);
       const members = Number(memberCountInput.value);
 
@@ -248,11 +256,18 @@
       }
 
       // Validate prices
-      if (!isValidPositiveNumber(ticketPrice)) {
-        validationErrors.push('Ticket price must be ≥ £0');
-        document.getElementById('errorPrice').style.display = 'block';
+      if (!isValidPositiveNumber(ticketPriceRegular)) {
+        validationErrors.push('Regular event ticket price must be ≥ £0');
+        document.getElementById('errorPriceRegular').style.display = 'block';
       } else {
-        document.getElementById('errorPrice').style.display = 'none';
+        document.getElementById('errorPriceRegular').style.display = 'none';
+      }
+
+      if (!isValidPositiveNumber(ticketPriceLarge)) {
+        validationErrors.push('Large event ticket price must be ≥ £0');
+        document.getElementById('errorPriceLarge').style.display = 'block';
+      } else {
+        document.getElementById('errorPriceLarge').style.display = 'none';
       }
 
       if (!isValidPositiveNumber(monthlyPremium)) {
@@ -273,7 +288,8 @@
       // Validate realistic limits
       if (attSmall > 10000) validationErrors.push('Regular event attendance seems unusually high (>10,000)');
       if (attLarge > 50000) validationErrors.push('Large event attendance seems unusually high (>50,000)');
-      if (ticketPrice > 1000) validationErrors.push('Ticket price seems unusually high (>£1,000)');
+      if (ticketPriceRegular > 1000) validationErrors.push('Regular event ticket price seems unusually high (>£1,000)');
+      if (ticketPriceLarge > 1000) validationErrors.push('Large event ticket price seems unusually high (>£1,000)');
       if (members > 100000) validationErrors.push('Member count seems unusually high (>100,000)');
 
       // Update validation display
@@ -353,7 +369,8 @@
 
       const attSmall = Number(attendanceSmallInput.value);
       const attLarge = Number(attendanceLargeInput.value);
-      const ticketPrice = Number(ticketPriceInput.value);
+      const ticketPriceRegular = Number(ticketPriceRegularInput.value);
+      const ticketPriceLarge = Number(ticketPriceLargeInput.value);
       const cardPct = Number(cardPercentInput.value);
       const monthlyPremium = Number(monthlyPremiumCostInput.value);
       const members = Number(memberCountInput.value);
@@ -362,19 +379,35 @@
 
       // Update display values
       cardLabel.textContent = cardPct;
-      ticketPriceDisplay.textContent = formatCurrency(ticketPrice);
+      ticketPriceRegularDisplay.textContent = formatCurrency(ticketPriceRegular);
+      ticketPriceLargeDisplay.textContent = formatCurrency(ticketPriceLarge);
       monthlyDisplayEl.textContent = formatCurrency(monthlyPremium);
       annualDisplayEl.textContent = formatCurrency(annualPremium);
 
-      // Calculate core metrics
-      const totalTickets = attSmall * 4 + attLarge;
-      const totalCardTickets = safeRound(totalTickets * (cardPct / 100), 0);
+      // Calculate separate metrics for each event type
+      const regularTickets = attSmall * 4; // 4 regular events
+      const largeTickets = attLarge * 1;   // 1 large event
+      const totalTickets = regularTickets + largeTickets;
 
-      const feePerCard = safeRound((ticketPrice * FEE_RATE) + FEE_FIXED, 2);
-      const totalFees = safeRound(totalCardTickets * feePerCard, 2);
+      const regularCardTickets = safeRound(regularTickets * (cardPct / 100), 0);
+      const largeCardTickets = safeRound(largeTickets * (cardPct / 100), 0);
+      const totalCardTickets = regularCardTickets + largeCardTickets;
+
+      // Calculate fees separately for each event type
+      const regularFeePerCard = safeRound((ticketPriceRegular * FEE_RATE) + FEE_FIXED, 2);
+      const largeFeePerCard = safeRound((ticketPriceLarge * FEE_RATE) + FEE_FIXED, 2);
+      
+      const regularTotalFees = safeRound(regularCardTickets * regularFeePerCard, 2);
+      const largeTotalFees = safeRound(largeCardTickets * largeFeePerCard, 2);
+      const totalFees = safeRound(regularTotalFees + largeTotalFees, 2);
+
       const totalCost = safeRound(annualPremium + totalFees, 2);
 
-      const totalRevenue = totalTickets * ticketPrice;
+      // Calculate total revenue
+      const regularRevenue = regularTickets * ticketPriceRegular;
+      const largeRevenue = largeTickets * ticketPriceLarge;
+      const totalRevenue = regularRevenue + largeRevenue;
+      
       const costPercent = safeDivide(totalCost * 100, totalRevenue, 0);
       const costPerEvent = safeDivide(totalCost, TOTAL_EVENTS, 0);
       const annualPerMember = safeDivide(totalCost, members, 0);
@@ -390,11 +423,11 @@
       annualPerMemberEl.textContent = formatCurrency(annualPerMember);
       costPerMemberEl.textContent = formatCurrency(costPerMemberEvent);
 
-      // Calculate per-event breakdowns
+      // Calculate per-event breakdowns (single event basis)
       const cardSmallCount = safeRound(attSmall * (cardPct / 100), 0);
       const cardLargeCount = safeRound(attLarge * (cardPct / 100), 0);
-      const feeSmall = safeRound(cardSmallCount * feePerCard, 2);
-      const feeLarge = safeRound(cardLargeCount * feePerCard, 2);
+      const feeSmall = safeRound(cardSmallCount * regularFeePerCard, 2);
+      const feeLarge = safeRound(cardLargeCount * largeFeePerCard, 2);
       const subSplit = safeDivide(annualPremium, TOTAL_EVENTS, 0);
 
       // Update table
@@ -402,18 +435,18 @@
       attLargeCell.textContent = attLarge.toString();
       cardSmall.textContent = cardSmallCount.toString();
       cardLarge.textContent = cardLargeCount.toString();
-      revSmall.textContent = formatCurrency(cardSmallCount * ticketPrice);
-      revLarge.textContent = formatCurrency(cardLargeCount * ticketPrice);
+      revSmall.textContent = formatCurrency(cardSmallCount * ticketPriceRegular);
+      revLarge.textContent = formatCurrency(cardLargeCount * ticketPriceLarge);
       feesSmall.textContent = formatCurrency(feeSmall);
       feesLarge.textContent = formatCurrency(feeLarge);
       totalSmall.textContent = formatCurrency(feeSmall + subSplit);
       totalLarge.textContent = formatCurrency(feeLarge + subSplit);
 
-      const smallRevenue = attSmall * ticketPrice;
-      const largeRevenue = attLarge * ticketPrice;
+      const smallRevenue = attSmall * ticketPriceRegular;
+      const largeRevenueSingle = attLarge * ticketPriceLarge;
       
       pctSmall.textContent = formatPercentage(safeDivide((feeSmall + subSplit) * 100, smallRevenue, 0));
-      pctLarge.textContent = formatPercentage(safeDivide((feeLarge + subSplit) * 100, largeRevenue, 0));
+      pctLarge.textContent = formatPercentage(safeDivide((feeLarge + subSplit) * 100, largeRevenueSingle, 0));
       
       perMemberSmall.textContent = formatCurrency(safeDivide(feeSmall + subSplit, members, 0));
       perMemberLarge.textContent = formatCurrency(safeDivide(feeLarge + subSplit, members, 0));
@@ -430,7 +463,7 @@
     }
 
     // Event listeners
-    [attendanceSmallInput, attendanceLargeInput, ticketPriceInput, cardPercentInput, monthlyPremiumCostInput, memberCountInput]
+    [attendanceSmallInput, attendanceLargeInput, ticketPriceRegularInput, ticketPriceLargeInput, cardPercentInput, monthlyPremiumCostInput, memberCountInput]
       .forEach(el => el.addEventListener('input', recalc));
 
     // Initial calculation
